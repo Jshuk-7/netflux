@@ -2,7 +2,9 @@
 
 int main() {
 	netflux::init();
-	getchar();
+	
+	netflux::http_server server;
+	server.start({ "127.0.0.1", 27015 });
+
 	netflux::shutdown();
-	return 0;
 }
