@@ -4,7 +4,8 @@
 
 namespace netflux {
 
-	struct network_id {
+	struct network_id
+	{
 		const char* ip_addr;
 		uint16_t port;
 	};

@@ -19,7 +19,8 @@ namespace netflux {
 		bool start_listening();
 
 		std::uintptr_t accept_connection();
-		bool receive_packet(std::string& packet, int32_t& recv_len);
+		bool receive_packet(std::string& packet);
+		bool send_packet(const std::string& packet);
 
 		bool close();
 

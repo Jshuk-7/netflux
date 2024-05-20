@@ -6,7 +6,7 @@
 
 namespace netflux {
 
-#define MAX_PACKET_SIZE 2048
+#define MAX_PACKET_SIZE 4096
 
 	tcp_socket::tcp_socket()
 	{
@@ -75,17 +75,34 @@ namespace netflux {
 		return client_socket;
 	}
 
-	bool tcp_socket::receive_packet(std::string& packet, int32_t& recv_len)
+	bool tcp_socket::receive_packet(std::string& packet)
 	{
-		packet.resize(MAX_PACKET_SIZE);
-		recv_len = recv((SOCKET)m_socket_id, packet.data(), packet.size(), 0);
-
-		if (recv_len > 0) {
-			packet.resize(recv_len);
-			return true;
+		char* recv_buf = (char*)malloc(sizeof(char) * MAX_PACKET_SIZE);
+		if (recv_buf == nullptr) {
+			return false;
 		}
 
-		return false;
+		int32_t recv_len = recv((SOCKET)m_socket_id, recv_buf, MAX_PACKET_SIZE, 0);
+
+		bool result = false;
+		if (recv_len > 0) {
+			packet.resize(recv_len);
+			memcpy(packet.data(), recv_buf, recv_len);
+			result = true;
+		}
+
+		free(recv_buf);
+		return result;
+	}
+
+	bool tcp_socket::send_packet(const std::string& packet)
+	{
+		int32_t send_result = send((SOCKET)m_socket_id, packet.data(), packet.size(), 0);
+		if (send_result == SOCKET_ERROR) {
+			return false;
+		}
+
+		return true;
 	}
 
 	bool tcp_socket::close()
