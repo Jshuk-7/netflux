@@ -12,9 +12,10 @@ namespace netflux {
 
 	struct http_request
 	{
-		http_method request_method;
+		http_method method;
 		std::string url;
-		std::string request_header;
+		std::string header;
+		std::string body;
 	};
 
 	struct http_status
@@ -25,9 +26,8 @@ namespace netflux {
 
 	struct http_response
 	{
-		std::string url;
 		http_status status;
-		std::string response_header;
+		std::string header;
 		std::string body;
 	};
 

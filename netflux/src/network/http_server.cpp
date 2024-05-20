@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <format>
+#include <filesystem>
+#include <fstream>
 
 namespace netflux {
 
@@ -77,7 +79,7 @@ namespace netflux {
 		while (cursor < request.size()) {
 			if (std::isspace(request[cursor])) {
 				std::string http_method = request.substr(start, cursor - start);
-				result.request_method = string_to_http_method(http_method.c_str());
+				result.method = string_to_http_method(http_method.c_str());
 				cursor++;
 				start = cursor;
 				break;
@@ -97,26 +99,64 @@ namespace netflux {
 			cursor++;
 		}
 
-		result.request_header = request.substr(start, request.size() - start);
+		while (cursor < request.size()) {
+			std::string slice = request.substr(cursor, cursor + 4);
+			if (slice == "\r\n\r\n") {
+				result.header = request.substr(start, (cursor - 1) - start);
+				for (uint32_t i = 0; i < 4; i++)
+					cursor++;
+				start = cursor;
+				break;
+			}
+
+			cursor++;
+		}
+
+		result.body = request.substr(start, request.size() - start);
 
 		return result;
 	}
 
 	void http_server::process_http_request(const http_request& req, http_response& res)
 	{
-		switch (req.request_method) {
+		switch (req.method) {
 			case http_method::GET: {
-				if (req.url == "/") {
+				if (req.url == "/" || req.url.starts_with("/index.html")) {
 					// index.html
+					std::string path = "site/index.html";
+					std::string index_html_contents;
+
+					if (!std::filesystem::exists(path)) {
+						res.status.code = 404;
+						res.status.message = "Not Found";
+						return;
+					}
+
+					std::ifstream file(path);
+					if (!file.is_open()) {
+						res.status.code = 404;
+						res.status.message = "Not Found";
+						return;
+					}
+
+					file.seekg(0, std::ios::end);
+					size_t file_size = file.tellg();
+					index_html_contents.resize(file_size);
+					file.seekg(0, std::ios::beg);
+
+					file.read(index_html_contents.data(), file_size);
+					file.close();
+
+					res.body = index_html_contents;
+				}
+				else {
+					res.body = "Welcome to my web server!";
 				}
 
 				res.status.code = 200;
 				res.status.message = "OK";
 
-				std::string content_type = "text/html";
-
-				res.body = "Welcome to my web server!";
-				res.response_header = std::format("Content-Length: {}\r\nContent-Type: {}", res.body.size(), content_type);
+				res.header = std::format("Content-Length: {}\r\nContent-Type: {}", res.body.size(), "text/html");
 			} break;
 			case http_method::POST: {
 
@@ -129,20 +169,21 @@ namespace netflux {
 			} break;
 			default:
 				printf("Error: Failed to process http request\n");
+				res.status.code = 500;
+				res.status.message = "Internal Server Error";
 				break;
 		}
 	}
 
 	std::string http_server::generate_http_response(const http_response& res)
 	{
-		std::string response_str;
-
-		response_str += std::format("HTTP/1.1 {} {}\r\n{}\r\n\r\n{}",
+		std::string response_str = std::format("HTTP/1.1 {} {}\r\n{}\r\n\r\n{}",
 			res.status.code,
 			res.status.message,
-			res.response_header,
+			res.header,
 			res.body
 		);
+
 		return response_str;
 	}
 
