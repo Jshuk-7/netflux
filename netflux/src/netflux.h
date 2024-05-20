@@ -2,9 +2,7 @@
 
 namespace netflux {
 
-	void start() {
-		printf("Hello World!\n");
-		getchar();
-	}
+	bool init();
+	bool shutdown();
 
 }

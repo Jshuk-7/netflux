@@ -1,6 +1,8 @@
 #include <netflux.h>
 
 int main() {
-	netflux::start();
+	netflux::init();
+	getchar();
+	netflux::shutdown();
 	return 0;
 }
